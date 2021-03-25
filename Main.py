@@ -7,6 +7,7 @@ import spacy
 import enchant, itertools
 import pandas as pd
 import stanza 
+import xml.etree.ElementTree as ET
 
 # stanza.download('es', package='ancora', processors='tokenize,mwt,pos,lemma', verbose=True) 
 # nltk.download('stopwords')
@@ -22,37 +23,67 @@ from sklearn.feature_extraction.text    import strip_accents_unicode
 
 
 def main():
-    # stNLP, abbreviations, emojis, emoticons, stopwords = initialize()
-    # text = "�C�mo Ted Ed es fleufliw casaaa calla ayudar a las familias los estudiantes y profesores a navegar por el covid 19 ... pandemia a trav�s de - en Madurai �ndia"
-    # text = text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stopwords)
-    # print(text)
-    read_csv()
+    # test()
+    # read_csv()
+    read_tsv()
+
+def test():
+    stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es = initialize()
+    text = "\"odio esto, es un puto infierno. covid vete YA!!! :( https://t.co/AHxQH2omqL\""
+    text = text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es)
+    print(text)
+
+def read_tsv():
+    import csv
+    import time
+
+    stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es = initialize()
+    
+    with open('data/tweets/train.tsv', 'r', encoding='utf-8') as infile, open('data/tweets/train-processed.tsv', 'w', newline = '', encoding = 'utf-8') as outfile:
+        reader = csv.reader(infile, delimiter='\t')
+        writer = csv.writer(outfile, delimiter='\t')
+        
+        line_count = 1
+        print('START PROCESSING ...')
+        writer.writerow(['id', 'event', 'tweet', 'offensive', 'emotion', 'processed_tweet'])
+
+
+        for row in reader:
+            new_row = row
+            text, _ = text_preprocessing(row[2], stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es)
+            new_row.append(text)
+            writer.writerow(new_row)
+            print('\tProcessing line ', line_count)
+            line_count += 1
+
+        outfile.flush() 
 
 def read_csv():
     import csv
     import time
     start_time = time.time()
-    stNLP, abbreviations, emojis, emoticons, stopwords = initialize()
-    
-    with open('data/tweets/covid-india-all.csv', 'r', encoding='utf-8') as infile, open('data/tweets/training-covid-india-all.csv', 'w', newline = '', encoding = 'utf-8') as outfile:
+    stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es = initialize()
+
+    with open('data/tweets/training_covid19.csv', 'r') as infile, open('data/tweets/training2.csv', 'w', newline = '', encoding = 'utf-8') as outfile:
         reader = csv.reader(infile)
         writer = csv.writer(outfile)
-        line_count = 1
+        writer.writerow(['id', 'tweet', 'processed_tweet', 'emotion', 'polarity'])
+
+        line_count = 0
         print('START PROCESSING ...')
 
         for row in reader:
-            row[3] = text_preprocessing(row[2], stNLP, abbreviations, emojis, emoticons, stopwords)
-            writer.writerow(row)
+            new_row = [line_count, row[0], '', row[1], '']
+            text, polarity = text_preprocessing(row[0], stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es)
+            new_row[2] = text
+            new_row[4] = polarity
+            writer.writerow(new_row)
             
             print('\tProcessing line ', line_count)
-            
-            if line_count == 20000:
-                print('DONE!')
-                outfile.flush()                
-                print("\n--- %s seconds ---" % (time.time() - start_time))
-                break
-
             line_count += 1
+
+        outfile.flush() 
+        print(f'Execution time: {start_time - time.time()}')
 
 def initialize():
     stNLP = stanza.Pipeline(processors='tokenize,mwt,pos,lemma', lang='es', use_gpu=True, logging_level='FATAL') 
@@ -60,10 +91,12 @@ def initialize():
     emojis = read_emojis()
     emoticons = read_emoticons()
     stopwords = read_stopwords()
+    d_es = load_dictionary()
+    senticon_es = load_senticon()
 
-    return stNLP, abbreviations, emojis, emoticons, stopwords
+    return stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es
 
-def text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stopwords):
+def text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es):
     print("ORIGINAL TEXT: ", text, "\n")
     text = text.lower()
     print("LOWER TEXT: ", text, "\n")
@@ -82,9 +115,11 @@ def text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stop
     text = replace_abbreviations(text, abbreviations)
     print("REPLACE ABBREV TEXT: ", text, "\n")
 
+    text = replace_laugh(text)
+    print("REPLACE LAUGH: ", text, "\n")
     text = remove_punctuation(text)
     print("REMOVE PUNCT TEXT: ", text, "\n")
-    text = remove_repeated_characters(text)
+    text = remove_repeated_characters(text, d_es)
     print("REMOVE REPT CHARS TEXT: ", text, "\n")
 
     # lemmas = lemmatize_spacy(text)
@@ -94,15 +129,18 @@ def text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stop
 
     text = remove_stopwords(text, stopwords)
     print("REMOVE STOPWORDS TEXT: ", text, "\n")
+
+    polarity = text_polarity(text, senticon_es)
+
     text = remove_accents(text)
     print("REMOVE ACCENTS TEXT: ", text, "\n")
     
     text = remove_extra_spaces(text)   
     print("PROCESSED TEXT: ", text, "\n")
 
-    return text
+    return text, polarity
 
-def text_preprocessing(text, stNLP, abbreviations, emojis, emoticons, stopwords):
+def text_preprocessing(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es):
     text = text.lower()
 
     text = remove_url(text)
@@ -113,19 +151,41 @@ def text_preprocessing(text, stNLP, abbreviations, emojis, emoticons, stopwords)
     text = replace_emojis_label(text, emojis)
     text = replace_abbreviations(text, abbreviations)
 
+    text = replace_laugh(text)
     text = remove_punctuation(text)
-    text = remove_repeated_characters(text)
+    text = remove_repeated_characters(text, d_es)
 
     # lemmas = lemmatize_spacy(text)
     lemmas = lemmatize_stanza(text, stNLP)
     text = TreebankWordDetokenizer().detokenize(lemmas)
 
     text = remove_stopwords(text, stopwords)
+    polarity = text_polarity(text, senticon_es)
     text = remove_accents(text)
 
     text = remove_extra_spaces(text)   
 
-    return text
+    return text, polarity
+
+def load_senticon():
+    tree = ET.parse('data/preprocessing/senticon_es.xml')
+    lemmas = tree.findall(".//lemma")
+    
+    senticon_es = {}
+    for child in lemmas:
+        senticon_es[child.text.strip()] = child.attrib.get('pol')
+    
+    return senticon_es
+
+def text_polarity(text, senticon_es):
+    polarity = 0.0
+    tokens = text.split()
+
+    for word in tokens:
+        if word in senticon_es:
+            polarity += float(senticon_es[word])
+
+    return polarity
 
 def lemmatize_spacy(text):
     nlp = spacy.load('es_core_news_lg')
@@ -152,6 +212,13 @@ def remove_mention(text):
 def remove_numbers(text):
     return re.sub(r'\d+', ' ', text)
 
+def replace_laugh(text):
+    text = re.sub(r'ja\S+', 'jajaja', text)
+    text = re.sub(r'je\S+', 'jajaja', text)
+    text = re.sub(r'jo\S+', 'jajaja', text)
+    text = re.sub(r'ji\S+', 'jajaja', text)
+    return text
+
 def remove_punctuation(text):
     # Get punctuation symbols
     punctuation_es = list(punctuation)
@@ -165,8 +232,15 @@ def remove_punctuation(text):
     
     return text
 
-def remove_repeated_characters(text):    
+def load_dictionary():
     d_es = enchant.Dict("es_ES")
+    enchant.request_dict(tag="es")
+    d_es.add("coronavirus")
+    d_es.add("covid")
+    d_es.add("jajaja")
+    return d_es
+
+def remove_repeated_characters(text, d_es):    
     words = []
     tokens = text.split()
 
@@ -261,7 +335,7 @@ def replace_emojis_label(text, emoji_list):
     # Replace emojis
     for em in text_emojis:
         if em in emoji_list:
-            text = text.replace(em, emoji_list.get(em))
+            text = text.replace(em, f' {emoji_list.get(em)} ')
         else:
             text = text.replace(em, ' ')
 
@@ -281,8 +355,9 @@ def read_emoticons():
 def replace_emoticons_label(text, emoticons):
     # Replace emoticons by its label
     for em in emoticons:
+        em = (f' {em} ')
         if em in text:
-            text = text.replace(em, ' ' + emoticons.get(em) + ' ')
+            text = text.replace(em, f' {emoticons.get(em)} ')
 
     return text
 
