@@ -1,1 +1,1 @@
-web: gunicorn tweets-preprocessing.wsgi
+web: uwsgi uwsgi.ini
