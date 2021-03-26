@@ -25,8 +25,10 @@ class Emotion(Resource):
 	@require_appkey
 	def post(self):
 		text = request.json['text']
-		clear_text = Main.text_preprocessing(text)
-		return clear_text
+		stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es = Main.initialize()
+		clear_text, polarity = Main.text_preprocessing(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es)
+		json ={"text": clear_text, "polarity": polarity}
+		return json
 
 # Routes
 api.add_resource(Emotion, '/api/v1/preprocessing')  
