@@ -9,9 +9,9 @@ import pandas as pd
 import stanza 
 import xml.etree.ElementTree as ET
 
-# stanza.download('es', package='ancora', processors='tokenize,mwt,pos,lemma', verbose=True) 
-# nltk.download('stopwords')
-# nltk.download('punkt')
+stanza.download('es', package='ancora', processors='tokenize,mwt,pos,lemma', verbose=True) 
+nltk.download('stopwords')
+nltk.download('punkt')
 
 from string                             import punctuation
 from nltk.corpus                        import stopwords
