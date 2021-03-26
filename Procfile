@@ -1,1 +1,1 @@
-web: gunicorn tweets-preprocessing.wsgi
+web: gunicorn tweets-preprocessing.wsgi RestApi:tweets_preprocessing

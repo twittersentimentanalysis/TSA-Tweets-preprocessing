@@ -5,8 +5,8 @@ from functools      import wraps
 from flask_restful  import Resource, Api
 from flask          import Flask, request, jsonify, abort
 
-app = Flask(__name__)
-api = Api(app)
+tweets_preprocessing = Flask(__name__)
+api = Api(tweets_preprocessing)
 
 # The actual decorator function
 def require_appkey(view_function):
@@ -35,4 +35,4 @@ api.add_resource(Emotion, '/api/v1/preprocessing')
 
 # Main
 if __name__ == '__main__':
-	app.run(port='8390')
+	tweets_preprocessing.run(port='8390')
