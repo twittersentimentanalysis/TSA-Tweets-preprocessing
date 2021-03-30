@@ -1,4 +1,4 @@
 *.csv
 *.tsv
-/tmp
+/tmp/build_b46b8f98
 /log
