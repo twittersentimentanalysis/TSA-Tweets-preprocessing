@@ -1,4 +1,2 @@
 *.csv
 *.tsv
-**/nltk_data
-/log
