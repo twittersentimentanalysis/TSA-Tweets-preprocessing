@@ -21,9 +21,9 @@ from sklearn.feature_extraction.text    import strip_accents_unicode
 
 
 def main():
-    # test()
+    test()
     # read_csv()
-    read_tsv()
+    # read_tsv()
 
 def test():
     stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es = initialize()
