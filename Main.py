@@ -1,8 +1,6 @@
 import re
 import nltk
-import emoji
 import emojis
-import regex
 import spacy
 import enchant, itertools
 import pandas as pd
@@ -277,28 +275,6 @@ def replace_abbreviations(text, abbreviations):
     return text
 
 def replace_emojis(text):
-    """ 
-    # Get text emojis
-    text_emojis = []
-    data = regex.findall(r'\X', text)
-    for word in data:
-        if any(char in emoji.UNICODE_EMOJI for char in word):
-            text_emojis.append(word)
-
-    # Get emojis
-    emojis = pd.read_csv('data/preprocessing/emojis.csv', 
-                        header = 0, 
-                        index_col = 'emoji',
-                        usecols = ['emoji', 'name_spanish_formatted'],
-                        encoding = 'utf-8',
-                        squeeze = True).to_dict()
-    
-    print(emojis)
-
-    # Replace emojis
-    for em in text_emojis:
-        text = text.replace(em, emojis.get(em)) 
-    """
     text_emojis = []    
     text_emojis = emojis.get(text)
 
