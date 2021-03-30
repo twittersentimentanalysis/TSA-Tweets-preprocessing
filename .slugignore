@@ -1,4 +1,4 @@
 *.csv
 *.tsv
-/tmp/build_b46b8f98
+**/nltk_data
 /log
