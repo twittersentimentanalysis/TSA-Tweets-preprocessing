@@ -10,6 +10,7 @@ __pycache__/
 config.json
 
 # Distribution / packaging
+tweets-preprocessing-env/
 data/
 .Python
 build/
