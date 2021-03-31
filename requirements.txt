@@ -17,7 +17,7 @@ joblib==1.0.1
 MarkupSafe==1.1.1
 murmurhash==1.0.5
 nltk==3.5
-numpy==1.20.2
+numpy
 packaging==20.9
 pandas==1.2.3
 pathy==0.4.0
