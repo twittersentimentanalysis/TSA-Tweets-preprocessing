@@ -1,1 +1,1 @@
-web: gunicorn RestAPI:tweets_preprocessing
+web: gunicorn  -b :$PORT RestAPI:tweets_preprocessing
