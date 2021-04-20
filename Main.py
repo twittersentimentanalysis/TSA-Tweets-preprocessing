@@ -4,7 +4,7 @@ import emojis
 import spacy
 import enchant, itertools
 import pandas as pd
-import stanza 
+import stanza
 import xml.etree.ElementTree as ET
 
 stanza.download('es', package='ancora', processors='tokenize,mwt,pos,lemma', verbose=True) 
@@ -235,6 +235,7 @@ def load_dictionary():
     enchant.request_dict(tag="es")
     d_es.add("coronavirus")
     d_es.add("covid")
+    d_es.add("negacionista")
     d_es.add("jajaja")
     return d_es
 
