@@ -1,1 +1,1 @@
-web: uwsgi uwsgi.ini
+web: gunicorn --bind 0.0.0.0:$PORT RestAPI:tweets_preprocessing

@@ -1,12 +1,10 @@
 import re
 import nltk
-import emoji
 import emojis
-import regex
 import spacy
 import enchant, itertools
 import pandas as pd
-import stanza 
+import stanza
 import xml.etree.ElementTree as ET
 
 stanza.download('es', package='ancora', processors='tokenize,mwt,pos,lemma', verbose=True) 
@@ -23,9 +21,9 @@ from sklearn.feature_extraction.text    import strip_accents_unicode
 
 
 def main():
-    # test()
+    test()
     # read_csv()
-    read_tsv()
+    # read_tsv()
 
 def test():
     stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es = initialize()
@@ -237,6 +235,7 @@ def load_dictionary():
     enchant.request_dict(tag="es")
     d_es.add("coronavirus")
     d_es.add("covid")
+    d_es.add("negacionista")
     d_es.add("jajaja")
     return d_es
 
@@ -277,28 +276,6 @@ def replace_abbreviations(text, abbreviations):
     return text
 
 def replace_emojis(text):
-    """ 
-    # Get text emojis
-    text_emojis = []
-    data = regex.findall(r'\X', text)
-    for word in data:
-        if any(char in emoji.UNICODE_EMOJI for char in word):
-            text_emojis.append(word)
-
-    # Get emojis
-    emojis = pd.read_csv('data/preprocessing/emojis.csv', 
-                        header = 0, 
-                        index_col = 'emoji',
-                        usecols = ['emoji', 'name_spanish_formatted'],
-                        encoding = 'utf-8',
-                        squeeze = True).to_dict()
-    
-    print(emojis)
-
-    # Replace emojis
-    for em in text_emojis:
-        text = text.replace(em, emojis.get(em)) 
-    """
     text_emojis = []    
     text_emojis = emojis.get(text)
 
