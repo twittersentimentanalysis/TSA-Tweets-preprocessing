@@ -19,3 +19,6 @@ Tweets preprocessing API for cleaning tweets and prepare them for applying senti
 
     `py RestAPI.py`
     
+4. Make API requests
+
+    Base URL: `http://localhost:8390/api/v1/preprocessing`
