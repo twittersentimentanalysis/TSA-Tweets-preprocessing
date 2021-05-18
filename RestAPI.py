@@ -25,9 +25,9 @@ class Emotion(Resource):
 	@require_appkey
 	def post(self):
 		text = request.json['text']
-		stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es = Main.initialize()
-		clear_text, polarity = Main.text_preprocessing(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es, senticon_es)
-		json ={"text": clear_text, "polarity": polarity}
+		stNLP, abbreviations, emojis, emoticons, stopwords, d_es = Main.initialize()
+		clear_text = Main.text_preprocessing(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es)
+		json ={"text": clear_text}
 		return json
 
 # Routes
