@@ -1,42 +1,35 @@
-import re
 import nltk
-import emojis
-import spacy
-import enchant, itertools
+import csv
 import pandas as pd
 import stanza
-import xml.etree.ElementTree as ET
+import Preprocessing
 
+from nltk                               import word_tokenize
+from nltk.tokenize.treebank             import TreebankWordDetokenizer
+
+# download necessary packages
 stanza.download('es', package='ancora', processors='tokenize,mwt,pos,lemma', verbose=True) 
 nltk.download('stopwords')
 nltk.download('punkt')
 
-from string                             import punctuation
-from nltk.corpus                        import stopwords
-from nltk.tokenize                      import sent_tokenize
-from nltk.stem                          import SnowballStemmer, LancasterStemmer, PorterStemmer
-from nltk                               import word_tokenize
-from nltk.tokenize.treebank             import TreebankWordDetokenizer
-
-
+# main function
 def main():
-    # test()
+    test()
     # read_csv()
-    read_tsv()
+    # read_tsv()
 
+# function for testing
 def test():
-    stNLP, abbreviations, emojis, emoticons, stopwords, d_es = initialize()
-    text = "No hay palabras suficientes para describir lo que hizo #Messi una joya de golazo que quedará en la historia de la #ChampionsLeague es magnífico poder presenciar a este fenómeno del fútbol coño #BarçaLFC https://t.co/EyEbIGRJAe"
+    stNLP, abbreviations, emojis, emoticons, stopwords, d_es = Preprocessing.initialize()
+    text = "a ver si se termina ya la pandemia, estoy harta del covid :("
     text = text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es)
     print(text)
 
+# function to process tweets in a tsv format
 def read_tsv():
-    import csv
-    import time
-
-    stNLP, abbreviations, emojis, emoticons, stopwords, d_es = initialize()
+    stNLP, abbreviations, emojis, emoticons, stopwords, d_es = Preprocessing.initialize()
     
-    with open('data/tweets/dev.tsv', 'r', encoding='utf-8') as infile, open('data/tweets/dev-processed_v2.tsv', 'w', newline = '', encoding = 'utf-8') as outfile:
+    with open('data/tweets/emoevales_test.tsv', 'r', encoding='utf-8') as infile, open('data/tweets/test-processed_v3.tsv', 'w', newline = '', encoding = 'utf-8') as outfile:
         reader = csv.reader(infile, delimiter='\t', quoting=csv.QUOTE_NONE)
         writer = csv.writer(outfile, delimiter='\t')
         
@@ -57,13 +50,11 @@ def read_tsv():
 
         outfile.flush() 
 
+# function to process tweets in a csv format
 def read_csv():
-    import csv
-    import time
-    start_time = time.time()
-    stNLP, abbreviations, emojis, emoticons, stopwords, d_es = initialize()
+    stNLP, abbreviations, emojis, emoticons, stopwords, d_es = Preprocessing.initialize()
 
-    with open('data/tweets/training_covid19.csv', 'r') as infile, open('data/tweets/training2.csv', 'w', newline = '', encoding = 'utf-8') as outfile:
+    with open('data/tweets/covid19-twitter-monitor-preprocessing.csv', 'r', encoding='utf-8') as infile, open('data/tweets/covid19-twitter-monitor-training-v2.csv', 'w', newline = '', encoding = 'utf-8') as outfile:
         reader = csv.reader(infile)
         writer = csv.writer(outfile)
         writer.writerow(['id', 'tweet', 'processed_tweet', 'emotion'])
@@ -72,7 +63,9 @@ def read_csv():
         print('START PROCESSING ...')
 
         for row in reader:
-            new_row = [line_count, row[0], '', row[1], '']
+            print(f'Row: {row}')
+            new_row = [line_count, row[0], '', row[1]]
+            print(f'New row: {new_row}')
             text = text_preprocessing(row[0], stNLP, abbreviations, emojis, emoticons, stopwords, d_es)
             new_row[2] = text
             writer.writerow(new_row)
@@ -81,255 +74,69 @@ def read_csv():
             line_count += 1
 
         outfile.flush() 
-        print(f'Execution time: {start_time - time.time()}')
 
-def initialize():
-    stNLP = stanza.Pipeline(processors='tokenize,mwt,pos,lemma', lang='es', use_gpu=True, logging_level='FATAL') 
-    abbreviations = read_abbreviations()
-    emojis = read_emojis()
-    emoticons = read_emoticons()
-    stopwords = read_stopwords()
-    d_es = load_dictionary()
 
-    return stNLP, abbreviations, emojis, emoticons, stopwords, d_es
-
+# function for testing
 def text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es):
     print("ORIGINAL TEXT: ", text, "\n")
     text = text.lower()
     print("LOWER TEXT: ", text, "\n")
 
-    text = remove_url(text)
+    text = Preprocessing.remove_url(text)
     print("REMOVE URL TEXT: ", text, "\n")
-    text = remove_mention(text)
+    text = Preprocessing.remove_mention(text)
     print("REMOVE MENTION TEXT: ", text, "\n")
-    text = remove_numbers(text)
+    text = Preprocessing.remove_numbers(text)
     print("REMOVE NUMBERS TEXT: ", text, "\n")
 
-    text = replace_emoticons_label(text, emoticons)
+    text = Preprocessing.replace_emoticons_label(text, emoticons)
     print("REPLACE EMOTICONS TEXT: ", text, "\n")
-    text = replace_emojis_label(text, emojis)
+    text = Preprocessing.replace_emojis_label(text, emojis)
     print("REPLACE EMOJIS TEXT: ", text, "\n")
-    text = replace_abbreviations(text, abbreviations)
+    text = Preprocessing.replace_abbreviations(text, abbreviations)
     print("REPLACE ABBREV TEXT: ", text, "\n")
 
-    text = replace_laugh(text)
+    text = Preprocessing.replace_laugh(text, d_es)
     print("REPLACE LAUGH: ", text, "\n")
-    text = remove_punctuation(text)
+    text = Preprocessing.remove_punctuation(text)
     print("REMOVE PUNCT TEXT: ", text, "\n")
-    text = remove_repeated_characters(text, d_es)
+    text = Preprocessing.remove_repeated_characters(text, d_es)
     print("REMOVE REPT CHARS TEXT: ", text, "\n")
 
-    # lemmas = lemmatize_spacy(text)
-    lemmas = lemmatize_stanza(text, stNLP)
+    lemmas = Preprocessing.lemmatize_stanza(text, stNLP)
     text = TreebankWordDetokenizer().detokenize(lemmas)
     print("LEMMATIZE TEXT: ", text, "\n")
 
-    text = remove_stopwords(text, stopwords)
+    text = Preprocessing.remove_stopwords(text, stopwords)
     print("REMOVE STOPWORDS TEXT: ", text, "\n")
     
-    text = remove_extra_spaces(text)   
+    text = Preprocessing.remove_extra_spaces(text)   
     print("PROCESSED TEXT: ", text, "\n")
 
     return text
 
+# function for preprocessing
 def text_preprocessing(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es):
     text = text.lower()
 
-    text = remove_url(text)
-    text = remove_mention(text)
-    text = remove_numbers(text)
+    text = Preprocessing.remove_url(text)
+    text = Preprocessing.remove_mention(text)
+    text = Preprocessing.remove_numbers(text)
 
-    text = replace_emoticons_label(text, emoticons)
-    text = replace_emojis_label(text, emojis)
-    text = replace_abbreviations(text, abbreviations)
+    text = Preprocessing.replace_emoticons_label(text, emoticons)
+    text = Preprocessing.replace_emojis_label(text, emojis)
+    text = Preprocessing.replace_abbreviations(text, abbreviations)
 
-    text = replace_laugh(text)
-    text = remove_punctuation(text)
-    text = remove_repeated_characters(text, d_es)
+    text = Preprocessing.replace_laugh(text, d_es)
+    text = Preprocessing.remove_punctuation(text)
+    text = Preprocessing.remove_repeated_characters(text, d_es)
 
-    # lemmas = lemmatize_spacy(text)
-    lemmas = lemmatize_stanza(text, stNLP)
+    lemmas = Preprocessing.lemmatize_stanza(text, stNLP)
     text = TreebankWordDetokenizer().detokenize(lemmas)
 
-    text = remove_stopwords(text, stopwords)
-    text = remove_extra_spaces(text)   
+    text = Preprocessing.remove_stopwords(text, stopwords)
+    text = Preprocessing.remove_extra_spaces(text)   
 
-    return text
-
-
-def lemmatize_spacy(text):
-    nlp = spacy.load('es_core_news_lg')
-    doc = nlp(text)
-    lemmas = [tok.lemma_.lower() for tok in doc]
-    return lemmas
-
-def lemmatize_stanza(text, stNLP):
-    if text == "":
-        doc = stNLP("el")
-    else:
-        doc = stNLP(text)
-    
-    lemmas = [word.lemma for sent in doc.sentences for word in sent.words]
-    
-    return lemmas
-
-def remove_url(text):
-    return re.sub(r'http\S+', ' ', text)
-
-def remove_mention(text):
-    return re.sub(r'@([A-Za-z0-9_]+)', ' ', text)
-
-def remove_numbers(text):
-    return re.sub(r'\d+', ' ', text)
-
-def replace_laugh(text):
-    text = re.sub(r'ja\S+', 'jajaja', text)
-    text = re.sub(r'je\S+', 'jajaja', text)
-    text = re.sub(r'jo\S+', 'jajaja', text)
-    text = re.sub(r'ji\S+', 'jajaja', text)
-    return text
-
-def remove_punctuation(text):
-    # Get punctuation symbols
-    punctuation_es = list(punctuation)
-    
-    # Add spanish punctuation
-    punctuation_es.extend(['¿', '¡'])
-    punctuation_es.extend(map(str,range(10)))
-    
-    # Apply removing
-    text = ''.join([c for c in text if c not in punctuation_es])
-    
-    return text
-
-def load_dictionary():
-    d_es = enchant.Dict("es_ES")
-    enchant.request_dict(tag="es")
-    d_es.add("coronavirus")
-    d_es.add("covid")
-    d_es.add("negacionista")
-    d_es.add("jajaja")
-    return d_es
-
-def remove_repeated_characters(text, d_es):    
-    words = []
-    tokens = text.split()
-
-    for word in tokens:
-        if d_es.check(word):
-            words.append(word)
-
-        else:
-            word = re.sub(r'(\w)\1+', r'\1', word)
-
-            if d_es.check(word):
-                words.append(word)
-    
-    return ' '.join(words)
-
-def read_abbreviations():
-    # Get abbreviations
-    abbreviations = pd.read_csv('data/preprocessing/abbreviations.csv', 
-                        header = None, 
-                        index_col = 0,
-                        squeeze = True).to_dict()
-    
-    return abbreviations
-
-def replace_abbreviations(text, abbreviations):    
-    # Replace abbreviations
-    for k, v in abbreviations.items():
-        if k in text:
-            text = text.replace(k,v)
-
-    return text
-
-def replace_emojis(text):
-    text_emojis = []    
-    text_emojis = emojis.get(text)
-
-    # Get emojis
-    emoji_list = pd.read_csv('data/preprocessing/emojis.csv', 
-                        header = 0, 
-                        index_col = 'emoji',
-                        usecols = ['emoji', 'name_spanish_formatted'],
-                        encoding = 'utf-8',
-                        squeeze = True).to_dict()
-
-    # Replace emojis
-    for em in text_emojis:
-        text = text.replace(em, emoji_list.get(em)) 
-
-    return text
-
-def read_emojis():
-    # Get emoji conversion
-    emoji_list = pd.read_csv('data/preprocessing/emojis-labeled-reduced.csv', 
-                        header = 0, 
-                        index_col = 'emoji',
-                        usecols = ['emoji', 'label'],
-                        encoding = 'utf-8',
-                        squeeze = True).to_dict()
-
-    return emoji_list
-
-def replace_emojis_label(text, emoji_list):    
-    # Get text emojis
-    text_emojis = []    
-    text_emojis = emojis.get(text)
-
-    # Replace emojis
-    for em in text_emojis:
-        if em in emoji_list:
-            text = text.replace(em, f' {emoji_list.get(em)} ')
-        else:
-            text = text.replace(em, ' ')
-
-    return text
-
-def read_emoticons():
-    # Get emoticons and its labels
-    emoticons = pd.read_csv('data/preprocessing/emoticons.csv', 
-                        header = 0, 
-                        index_col = 'emoticon',
-                        usecols = ['emoticon', 'label'],
-                        encoding = 'utf-8',
-                        squeeze = True).to_dict()
-    
-    return emoticons
-
-def replace_emoticons_label(text, emoticons):
-    # Replace emoticons by its label
-    for em in emoticons:
-        em = (f' {em} ')
-        if em in text:
-            text = text.replace(em, f' {emoticons.get(em)} ')
-
-    return text
-
-def remove_extra_spaces(text):
-    return re.sub(' +', ' ', text)
-
-def read_stopwords():
-    stopwords_es = stopwords.words('spanish')
-    stopwords_es.remove('no')
-    stopwords_es.remove('muy')
-    stopwords_es.remove('mucho')
-    stopwords_es.remove('poco')
-    stopwords_es.append('ed')
-
-    return stopwords_es
-
-def remove_stopwords(text, stopwords_es):
-    tokens_new = []
-    tokens_old = word_tokenize(text)
-
-    for word in tokens_old:
-        if word not in stopwords_es:
-            tokens_new.append(word)
-    
-    text = ' '.join(tokens_new)
-    
     return text
 
 

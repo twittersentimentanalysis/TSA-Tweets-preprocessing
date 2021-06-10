@@ -1,9 +1,9 @@
-import json
 import Main
+import Preprocessing
 
 from functools      import wraps
 from flask_restful  import Resource, Api
-from flask          import Flask, request, jsonify, abort
+from flask          import Flask, request, abort
 
 tweets_preprocessing = Flask(__name__)
 api = Api(tweets_preprocessing)
@@ -25,13 +25,13 @@ class Emotion(Resource):
 	@require_appkey
 	def post(self):
 		text = request.json['text']
-		stNLP, abbreviations, emojis, emoticons, stopwords, d_es = Main.initialize()
+		stNLP, abbreviations, emojis, emoticons, stopwords, d_es = Preprocessing.initialize()
 		clear_text = Main.text_preprocessing(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es)
 		json ={"text": clear_text}
 		return json
 
 # Routes
-api.add_resource(Emotion, '/api/v1/preprocessing')  
+api.add_resource(Emotion, '/tweets-preprocessing/v1/preprocessing')  
 
 # Main
 if __name__ == '__main__':
