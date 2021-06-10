@@ -14,14 +14,14 @@ nltk.download('punkt')
 
 # main function
 def main():
-    # test()
+    test()
     # read_csv()
-    read_tsv()
+    # read_tsv()
 
 # function for testing
 def test():
     stNLP, abbreviations, emojis, emoticons, stopwords, d_es = Preprocessing.initialize()
-    text = "@AntonioMautor Mi idea primera era hacerlo, pero como dijeron que posiblemente no había vacunas jejej para todo el mundo jijjj, tengo 45 jjaj y como jajjaj si el barco se hundiera, primero grupos de riesgo ... los mayores de 65, etc etc ... jersey"
+    text = "a ver si se termina ya la pandemia, estoy harta del covid :("
     text = text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es)
     print(text)
 
