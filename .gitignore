@@ -11,7 +11,7 @@ config.json
 
 # Distribution / packaging
 tweets-preprocessing-env/
-data/
+data/tweets
 .Python
 build/
 develop-eggs/
