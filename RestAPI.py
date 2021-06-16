@@ -35,4 +35,4 @@ api.add_resource(Emotion, '/tweets-preprocessing/v1/preprocessing')
 
 # Main
 if __name__ == '__main__':
-	tweets_preprocessing.run(port='8390')
+	tweets_preprocessing.run(host='0.0.0.0', port='8390')
