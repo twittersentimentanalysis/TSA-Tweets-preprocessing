@@ -4,11 +4,11 @@ import pandas as pd
 import stanza
 import Preprocessing
 
-from nltk                               import word_tokenize
-from nltk.tokenize.treebank             import TreebankWordDetokenizer
+from nltk.tokenize.treebank     import TreebankWordDetokenizer
+from nltk.tokenize.treebank     import TreebankWordTokenizer
 
 # download necessary packages
-stanza.download('es', package='ancora', processors='tokenize,mwt,pos,lemma', verbose=True) 
+stanza.download('es', package='ancora', processors='tokenize,pos,lemma', verbose=True) 
 nltk.download('stopwords')
 nltk.download('punkt')
 
@@ -21,7 +21,7 @@ def main():
 # function for testing
 def test():
     stNLP, abbreviations, emojis, emoticons, stopwords, d_es = Preprocessing.initialize()
-    text = "a ver si se termina ya la pandemia, estoy harta del covid :("
+    text = "\"Si ya he pasado el coronavirus, ¿para qué me vacuno? https://t.co/oZo4ZjSruk a través de @Conversation_E\""
     text = text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es)
     print(text)
 
@@ -54,27 +54,24 @@ def read_tsv():
 def read_csv():
     stNLP, abbreviations, emojis, emoticons, stopwords, d_es = Preprocessing.initialize()
 
-    with open('data/tweets/covid19-twitter-monitor-preprocessing.csv', 'r', encoding='utf-8') as infile, open('data/tweets/covid19-twitter-monitor-training-v2.csv', 'w', newline = '', encoding = 'utf-8') as outfile:
+    with open('data/tweets/covid19-india-dataset-translated.csv', 'r', encoding='utf-8-sig') as infile, open('data/tweets/covid19-india-dataset-training.csv', 'w', newline = '', encoding = 'utf-8') as outfile:
         reader = csv.reader(infile)
         writer = csv.writer(outfile)
         writer.writerow(['id', 'tweet', 'processed_tweet', 'emotion'])
 
-        line_count = 0
         print('START PROCESSING ...')
+        line_num = 0
 
         for row in reader:
-            print(f'Row: {row}')
-            new_row = [line_count, row[0], '', row[1]]
-            print(f'New row: {new_row}')
-            text = text_preprocessing(row[0], stNLP, abbreviations, emojis, emoticons, stopwords, d_es)
+            new_row = [line_num, row[2], '', row[3]]
+            text = text_preprocessing(row[2], stNLP, abbreviations, emojis, emoticons, stopwords, d_es)
             new_row[2] = text
             writer.writerow(new_row)
             
-            print('\tProcessing line ', line_count)
-            line_count += 1
+            print(f'\tProcessing line {line_num}: {new_row}')
+            line_num = line_num + 1
 
         outfile.flush() 
-
 
 # function for testing
 def text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stopwords, d_es):
@@ -96,14 +93,14 @@ def text_preprocessing_debug(text, stNLP, abbreviations, emojis, emoticons, stop
     text = Preprocessing.replace_abbreviations(text, abbreviations)
     print("REPLACE ABBREV TEXT: ", text, "\n")
 
-    text = Preprocessing.replace_laugh(text, d_es)
-    print("REPLACE LAUGH: ", text, "\n")
     text = Preprocessing.remove_punctuation(text)
     print("REMOVE PUNCT TEXT: ", text, "\n")
-    text = Preprocessing.remove_repeated_characters(text, d_es)
-    print("REMOVE REPT CHARS TEXT: ", text, "\n")
+    text = Preprocessing.check_dictionary(text, d_es)
+    print("DICTIONARY, REPLACE LAUGH, REMOVE REP CHARS: ", text, "\n")    
 
-    lemmas = Preprocessing.lemmatize_stanza(text, stNLP)
+    # lemmas = Preprocessing.lemmatize_stanza(text, stNLP)
+    lemmas = Preprocessing.lemmatize_spacy(text)
+    print(lemmas)
     text = TreebankWordDetokenizer().detokenize(lemmas)
     print("LEMMATIZE TEXT: ", text, "\n")
 
@@ -127,11 +124,11 @@ def text_preprocessing(text, stNLP, abbreviations, emojis, emoticons, stopwords,
     text = Preprocessing.replace_emojis_label(text, emojis)
     text = Preprocessing.replace_abbreviations(text, abbreviations)
 
-    text = Preprocessing.replace_laugh(text, d_es)
     text = Preprocessing.remove_punctuation(text)
-    text = Preprocessing.remove_repeated_characters(text, d_es)
+    text = Preprocessing.check_dictionary(text, d_es)  
 
-    lemmas = Preprocessing.lemmatize_stanza(text, stNLP)
+    # lemmas = Preprocessing.lemmatize_stanza(text, stNLP)
+    lemmas = Preprocessing.lemmatize_spacy(text)
     text = TreebankWordDetokenizer().detokenize(lemmas)
 
     text = Preprocessing.remove_stopwords(text, stopwords)
