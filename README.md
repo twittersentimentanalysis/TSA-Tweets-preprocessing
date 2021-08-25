@@ -21,4 +21,12 @@ Tweets preprocessing API for cleaning tweets and prepare them for applying senti
     
 4. Make API requests
 
-    Base URL: `http://localhost:8390/api/v1/preprocessing`
+    Base URL: `http://localhost:8390/tweets-preprocessing/v1`
+
+
+## Endpoints
+### Localhost
+http://localhost:8390/tweets-preprocessing/v1/preprocessing
+
+### GESSI Server
+http://gessi-sw.essi.upc.edu:8390/tweets-preprocessing/v1/preprocessing
